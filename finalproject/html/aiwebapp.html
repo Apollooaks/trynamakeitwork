@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tron Bike Game - Two Players</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #111;
+            border: 2px solid white;
+        }
+        #gameOver {
+            font-size: 24px;
+            margin: 20px;
+        }
+        #resetButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: lime;
+            border: none;
+            border-radius: 5px;
+        }
+        #resetButton:hover {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameOver" style="display: none;">Game Over!</div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <button id="resetButton" style="display: none;">Restart Game</button>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOverText = document.getElementById('gameOver');
+        const resetButton = document.getElementById('resetButton');
+
+        const tileSize = 10;
+        const rows = canvas.height / tileSize;
+        const cols = canvas.width / tileSize;
+
+        let player1 = {
+            x: 5,
+            y: 5,
+            direction: { x: 1, y: 0 },
+            trail: [],
+            color: 'cyan',
+        };
+
+        let player2 = {
+            x: cols - 6,
+            y: rows - 6,
+            direction: { x: -1, y: 0 },
+            trail: [],
+            color: 'orange',
+        };
+
+        let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+        let gameInterval;
+
+        function resetGame() {
+            clearInterval(gameInterval);
+
+            // Reset players
+            player1 = {
+                x: 5,
+                y: 5,
+                direction: { x: 1, y: 0 },
+                trail: [],
+                color: 'cyan',
+            };
+            player2 = {
+                x: cols - 6,
+                y: rows - 6,
+                direction: { x: -1, y: 0 },
+                trail: [],
+                color: 'orange',
+            };
+
+            // Reset grid
+            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+            // Hide game over and reset button
+            gameOverText.style.display = 'none';
+            resetButton.style.display = 'none';
+
+            // Start game loop
+            gameInterval = setInterval(gameLoop, 100);
+        }
+
+        function handleKeyDown(event) {
+            switch (event.key) {
+                // Player 1 controls (WASD)
+                case 'w': if (player1.direction.y === 0) player1.direction = { x: 0, y: -1 }; break;
+                case 's': if (player1.direction.y === 0) player1.direction = { x: 0, y: 1 }; break;
+                case 'a': if (player1.direction.x === 0) player1.direction = { x: -1, y: 0 }; break;
+                case 'd': if (player1.direction.x === 0) player1.direction = { x: 1, y: 0 }; break;
+
+                // Player 2 controls (Arrow Keys)
+                case 'ArrowUp': if (player2.direction.y === 0) player2.direction = { x: 0, y: -1 }; break;
+                case 'ArrowDown': if (player2.direction.y === 0) player2.direction = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': if (player2.direction.x === 0) player2.direction = { x: -1, y: 0 }; break;
+                case 'ArrowRight': if (player2.direction.x === 0) player2.direction = { x: 1, y: 0 }; break;
+            }
+        }
+
+        function drawTile(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+
+        function updatePlayer(entity) {
+            // Move entity
+            entity.x += entity.direction.x;
+            entity.y += entity.direction.y;
+
+            // Check for collisions
+            if (
+                entity.x < 0 || entity.x >= cols ||
+                entity.y < 0 || entity.y >= rows ||
+                grid[entity.y][entity.x] !== 0
+            ) {
+                return false; // Collision occurred
+            }
+
+            // Mark trail on grid
+            grid[entity.y][entity.x] = entity.color;
+
+            // Add trail
+            entity.trail.push({ x: entity.x, y: entity.y });
+            return true;
+        }
+
+        function drawTrail(entity) {
+            entity.trail.forEach(segment => drawTile(segment.x, segment.y, entity.color));
+        }
+
+        function gameLoop() {
+            const player1Alive = updatePlayer(player1);
+            const player2Alive = updatePlayer(player2);
+
+            if (!player1Alive || !player2Alive) {
+                clearInterval(gameInterval);
+                gameOverText.style.display = 'block';
+
+                if (!player1Alive && !player2Alive) {
+                    gameOverText.textContent = 'Game Over! It\'s a Tie!';
+                } else if (!player1Alive) {
+                    gameOverText.textContent = 'Game Over! Player 2 Wins!';
+                } else {
+                    gameOverText.textContent = 'Game Over! Player 1 Wins!';
+                }
+
+                resetButton.style.display = 'block';
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTrail(player1);
+            drawTrail(player2);
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', handleKeyDown);
+        resetButton.addEventListener('click', resetGame);
+
+        // Start the game
+        resetGame();
+    </script>
+</body>
+</html>
